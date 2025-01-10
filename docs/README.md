@@ -28,25 +28,25 @@ VAR x = 5
 VAR y = "Hello, Lith!"
 
 # 输出
-PRINT(x)
-PRINT(y)
+msgbox(x)
+msgbox(y)
 ```
 ### 控制结构
 ```python
 # 条件语句
 IF x > 3 THEN
-    PRINT("x 大于 3")
+    msgbox("x 大于 3")
 ELSE
-    PRINT("x 小于等于 3")
+    msgbox("x 小于等于 3")
 END
 
 # 循环语句
 FOR i = 0 TO 5 THEN
-    PRINT(i)
+    msgbox(i)
 END
 
 WHILE x > 0 THEN
-    PRINT(x)
+    msgbox(x)
     x = x - 1
 END
 ```
@@ -59,7 +59,7 @@ END
 
 # 函数调用
 VAR result = add(3, 4)
-PRINT(result)
+msgbox(result)
 ```
 # 语法规则
 
@@ -151,6 +151,30 @@ PRINT(result)
 - **func-def**：函数定义
   - **KEYWORD:FUN IDENTIFIER? LPAREN (IDENTIFIER (COMMA IDENTIFIER)*)? RPAREN (ARROW expr)**：函数定义，可选地后跟一个标识符、左括号、零个或多个由逗号分隔的标识符、右括号和箭头表达式
   - **(NEWLINE statements KEYWORD:END)**：换行符后跟语句序列和结束关键字
+
+## 实例代码（main）
+- 以下是使用Lith语言的实例：
+```python
+import lith as basic
+
+while True:
+    text = input('Lith > ')
+    if text.strip() == "": continue
+    if text.strip().lower() in ["exit", "quit"]:
+        break
+
+    result, error = basic.run('<stdin>', text)
+
+    if error:
+        print(error.as_string())
+    elif result:
+        # 只打印非零的返回值
+        if len(result.elements) > 0:
+            if len(result.elements) == 1 and result.elements[0] != 0:
+                print(repr(result.elements[0]))
+            elif len(result.elements) > 1:
+                print(repr(result))
+```
 
 # 贡献指南
 欢迎对锂语言项目进行贡献！以下是一些贡献方式和建议：

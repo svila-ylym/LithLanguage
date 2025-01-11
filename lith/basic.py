@@ -4,12 +4,14 @@
 # Lith目前还不完善
 #######################################
 
-from strings_with_arrows import *
+from .strings_with_arrows import *
 
 import string
 import os
 import math
 
+import tkinter as tk
+from tkinter import messagebox
 #######################################
 # CONSTANTS
 #######################################
@@ -28,6 +30,51 @@ LNAME = 'Lith'
 print(LNAME+' '+VERSION+' 准备就绪')
 print('')
 
+def create_window():
+    print('Warning：此函数内测中，暂不稳定')
+    window = tk.Tk()  # 创建主窗口
+    window.title("自定义窗口")  # 设置窗口标题
+
+    # 设置窗口大小的输入框
+    tk.Label(window, text="窗口宽度:").pack(pady=5)
+    width_entry = tk.Entry(window)
+    width_entry.pack(pady=5)
+
+    tk.Label(window, text="窗口高度:").pack(pady=5)
+    height_entry = tk.Entry(window)
+    height_entry.pack(pady=5)
+
+    # 设置组件内容的输入框
+    tk.Label(window, text="组件内容:").pack(pady=5)
+    content_entry = tk.Entry(window)
+    content_entry.pack(pady=5)
+
+    # 创建一个按钮，应用用户的设置
+    def apply_settings():
+        try:
+            width = int(width_entry.get())
+            height = int(height_entry.get())
+            content = content_entry.get()
+
+            # 设置窗口大小
+            window.geometry(f"{width}x{height}")
+
+            # 创建或更新标签
+            label.config(text=content)
+
+        except ValueError:
+            messagebox.showerror("错误", "请输入有效的数字！")
+
+    # 创建一个应用设置的按钮
+    apply_button = tk.Button(window, text="应用设置", command=apply_settings)
+    apply_button.pack(pady=10)
+
+    # 创建一个标签以显示内容
+    label = tk.Label(window, text="", font=("Arial", 16))
+    label.pack(pady=20)
+
+    # 运行主循环
+    window.mainloop()
 #######################################
 # ERRORS
 #######################################
@@ -1688,6 +1735,27 @@ class BuiltInFunction(BaseFunction):
     if res.should_return(): return res
     return res.success(return_value)
   
+    def execute_help(self, exec_ctx):
+        commands = [
+            "PRINT(value) - 打印值",
+            "PRINT_RET(value) - 打印值并返回",
+            "INPUT() - 从用户获取输入",
+            "INPUT_INT() - 从用户获取整数输入",
+            "CLEAR() - 清除控制台",
+            "IS_NUM(value) - 检查值是否为数字",
+            "IS_STR(value) - 检查值是否为字符串",
+            "IS_LIST(value) - 检查值是否为列表",
+            "IS_FUN(value) - 检查值是否为函数",
+            "APPEND(list, value) - 将值添加到列表",
+            "POP(list, index) - 从列表中移除指定索引的元素",
+            "EXTEND(listA, listB) - 将listB的元素添加到listA",
+            "LEN(list) - 返回列表的长度",
+            "RUN(fn) - 运行指定的脚本文件"
+        ]
+        help_text = "\n".join(commands)
+        return RTResult().success(String(help_text))
+    execute_help.arg_names = []
+
   def no_visit_method(self, node, context):
     raise Exception(f'No execute_{self.name} method defined')
 
@@ -1759,7 +1827,7 @@ class BuiltInFunction(BaseFunction):
     if not isinstance(list_, List):
       return RTResult().failure(RTError(
         self.pos_start, self.pos_end,
-        "First argument must be list",
+        "第一个参数必须是列表",
         exec_ctx
       ))
 
@@ -2191,6 +2259,8 @@ global_symbol_table.set("POP", BuiltInFunction.pop)
 global_symbol_table.set("EXTEND", BuiltInFunction.extend)
 global_symbol_table.set("LEN", BuiltInFunction.len)
 global_symbol_table.set("RUN", BuiltInFunction.run)
+global_symbol_table.set("HELP", BuiltInFunction("help"))
+
 
 def run(fn, text):
   # Generate tokens

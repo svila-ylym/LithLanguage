@@ -5,6 +5,21 @@
 
 *tips*:本语言部分技术来自YouTube@davidcallanan。
 
+# Lith 语言更新日志
+
+#### L0.1.3 (最新)
+- **实验性GUI支持**：引入了一个新的实验性GUI，允许用户通过图形界面与Lith程序交互。
+- **帮助文档**：新增了一个`help()`函数，用户可以通过调用该函数获取锂语言的帮助信息。
+
+### L0.1.2
+- 增加了对列表和字典的支持。
+- 优化了词法分析器的性能。
+
+### L0.1.1
+- 初始公开发布版本，支持基本的算术运算和控制结构。
+
+请定期检查更新日志，以获取最新的功能更新和改进信息。
+
 ## 安装指南
 ### Python环境
 - 确保已安装Python 3.x版本。可通过在终端运行`python --version`或`python3 --version`来检查Python版本。
@@ -28,25 +43,25 @@ VAR x = 5
 VAR y = "Hello, Lith!"
 
 # 输出
-msgbox(x)
-msgbox(y)
+PRINT(x)
+PRINT(y)
 ```
 ### 控制结构
 ```python
 # 条件语句
 IF x > 3 THEN
-    msgbox("x 大于 3")
+    PRINT("x 大于 3")
 ELSE
-    msgbox("x 小于等于 3")
+    PRINT("x 小于等于 3")
 END
 
 # 循环语句
 FOR i = 0 TO 5 THEN
-    msgbox(i)
+    PRINT(i)
 END
 
 WHILE x > 0 THEN
-    msgbox(x)
+    PRINT(x)
     x = x - 1
 END
 ```
@@ -59,7 +74,7 @@ END
 
 # 函数调用
 VAR result = add(3, 4)
-msgbox(result)
+PRINT(result)
 ```
 # 语法规则
 
@@ -151,30 +166,6 @@ msgbox(result)
 - **func-def**：函数定义
   - **KEYWORD:FUN IDENTIFIER? LPAREN (IDENTIFIER (COMMA IDENTIFIER)*)? RPAREN (ARROW expr)**：函数定义，可选地后跟一个标识符、左括号、零个或多个由逗号分隔的标识符、右括号和箭头表达式
   - **(NEWLINE statements KEYWORD:END)**：换行符后跟语句序列和结束关键字
-
-## 实例代码（main）
-- 以下是使用Lith语言的实例：
-```python
-import lith as basic
-
-while True:
-    text = input('Lith > ')
-    if text.strip() == "": continue
-    if text.strip().lower() in ["exit", "quit"]:
-        break
-
-    result, error = basic.run('<stdin>', text)
-
-    if error:
-        print(error.as_string())
-    elif result:
-        # 只打印非零的返回值
-        if len(result.elements) > 0:
-            if len(result.elements) == 1 and result.elements[0] != 0:
-                print(repr(result.elements[0]))
-            elif len(result.elements) > 1:
-                print(repr(result))
-```
 
 # 贡献指南
 欢迎对锂语言项目进行贡献！以下是一些贡献方式和建议：

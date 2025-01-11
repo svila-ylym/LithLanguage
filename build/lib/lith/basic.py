@@ -4,35 +4,24 @@
 # Lith目前还不完善
 #######################################
 
-print('Welcome to Lith,language is being prepared...')
-
 from .strings_with_arrows import *
 
 import string
 import os
 import math
-import codecs
 
+import tkinter as tk
+from tkinter import messagebox
 #######################################
 # CONSTANTS
 #######################################
-cstart, cend = 0x4E00, 0x9FA5
+
 DIGITS = '0123456789'
 LETTERS = string.ascii_letters
-RUSSIAN = ''.join(chr(codepoint) for codepoint in range(0x0410, 0x045F))  # 包含大写和小写俄语字母
-LETTERS_DIGITS = LETTERS + DIGITS + RUSSIAN
-CHINESE = ''
+LETTERS_DIGITS = LETTERS + DIGITS
 VERSION = 'L0.1.1'
 AUTHOR = 'UNREAL'
 LNAME = 'Lith'
-
-#######################################
-# CHINESE
-#######################################
-
-for codepoint in range(cstart, cend + 1):
-    CHINESE += chr(codepoint)
-print('中文字符就绪')
 
 #######################################
 # WELCOME
@@ -41,6 +30,51 @@ print('中文字符就绪')
 print(LNAME+' '+VERSION+' 准备就绪')
 print('')
 
+def create_window():
+    print('Warning：此函数内测中，暂不稳定')
+    window = tk.Tk()  # 创建主窗口
+    window.title("自定义窗口")  # 设置窗口标题
+
+    # 设置窗口大小的输入框
+    tk.Label(window, text="窗口宽度:").pack(pady=5)
+    width_entry = tk.Entry(window)
+    width_entry.pack(pady=5)
+
+    tk.Label(window, text="窗口高度:").pack(pady=5)
+    height_entry = tk.Entry(window)
+    height_entry.pack(pady=5)
+
+    # 设置组件内容的输入框
+    tk.Label(window, text="组件内容:").pack(pady=5)
+    content_entry = tk.Entry(window)
+    content_entry.pack(pady=5)
+
+    # 创建一个按钮，应用用户的设置
+    def apply_settings():
+        try:
+            width = int(width_entry.get())
+            height = int(height_entry.get())
+            content = content_entry.get()
+
+            # 设置窗口大小
+            window.geometry(f"{width}x{height}")
+
+            # 创建或更新标签
+            label.config(text=content)
+
+        except ValueError:
+            messagebox.showerror("错误", "请输入有效的数字！")
+
+    # 创建一个应用设置的按钮
+    apply_button = tk.Button(window, text="应用设置", command=apply_settings)
+    apply_button.pack(pady=10)
+
+    # 创建一个标签以显示内容
+    label = tk.Label(window, text="", font=("Arial", 16))
+    label.pack(pady=20)
+
+    # 运行主循环
+    window.mainloop()
 #######################################
 # ERRORS
 #######################################
@@ -315,13 +349,12 @@ class Lexer:
     id_str = ''
     pos_start = self.pos.copy()
 
-    while self.current_char != None and (self.current_char in LETTERS_DIGITS + '_') or ('\u4e00' <= self.current_char <= '\u9fa5'):
-        id_str += self.current_char
-        self.advance()
+    while self.current_char != None and self.current_char in LETTERS_DIGITS + '_':
+      id_str += self.current_char
+      self.advance()
 
     tok_type = TT_KEYWORD if id_str in KEYWORDS else TT_IDENTIFIER
     return Token(tok_type, id_str, pos_start, self.pos)
-
 
   def make_minus_or_arrow(self):
     tok_type = TT_MINUS
@@ -1717,12 +1750,12 @@ class BuiltInFunction(BaseFunction):
   #####################################
 
   def execute_print(self, exec_ctx):
-        print(str(exec_ctx.symbol_table.get('value')))
-        return RTResult().success(Number.null)  # 这里可以改为直接返回 None
+    print(str(exec_ctx.symbol_table.get('value')))
+    return RTResult().success(Number.null)
   execute_print.arg_names = ['value']
-
+  
   def execute_print_ret(self, exec_ctx):
-        return RTResult().success(String(str(exec_ctx.symbol_table.get('value'))))
+    return RTResult().success(String(str(exec_ctx.symbol_table.get('value'))))
   execute_print_ret.arg_names = ['value']
   
   def execute_input(self, exec_ctx):
@@ -1773,7 +1806,7 @@ class BuiltInFunction(BaseFunction):
     if not isinstance(list_, List):
       return RTResult().failure(RTError(
         self.pos_start, self.pos_end,
-        "First argument must be list",
+        "第一个参数必须是列表",
         exec_ctx
       ))
 
@@ -2186,13 +2219,13 @@ class Interpreter:
 #######################################
 
 global_symbol_table = SymbolTable()
-global_symbol_table.set("空", Number.null)
-global_symbol_table.set("假", Number.false)
-global_symbol_table.set("真", Number.true)
-global_symbol_table.set("pi", Number.math_PI)
-global_symbol_table.set("msgbox", BuiltInFunction.print)
-global_symbol_table.set("msgbox_RET", BuiltInFunction.print_ret)
-global_symbol_table.set("inputbox", BuiltInFunction.input)
+global_symbol_table.set("NULL", Number.null)
+global_symbol_table.set("FALSE", Number.false)
+global_symbol_table.set("TRUE", Number.true)
+global_symbol_table.set("MATH_PI", Number.math_PI)
+global_symbol_table.set("PRINT", BuiltInFunction.print)
+global_symbol_table.set("PRINT_RET", BuiltInFunction.print_ret)
+global_symbol_table.set("INPUT", BuiltInFunction.input)
 global_symbol_table.set("INPUT_INT", BuiltInFunction.input_int)
 global_symbol_table.set("CLEAR", BuiltInFunction.clear)
 global_symbol_table.set("CLS", BuiltInFunction.clear)
@@ -2207,24 +2240,20 @@ global_symbol_table.set("LEN", BuiltInFunction.len)
 global_symbol_table.set("RUN", BuiltInFunction.run)
 
 def run(fn, text):
-    # Generate tokens
-    lexer = Lexer(fn, text)
-    tokens, error = lexer.make_tokens()
-    if error: return None, error
-    
-    # Generate AST
-    parser = Parser(tokens)
-    ast = parser.parse()
-    if ast.error: return None, ast.error
+  # Generate tokens
+  lexer = Lexer(fn, text)
+  tokens, error = lexer.make_tokens()
+  if error: return None, error
+  
+  # Generate AST
+  parser = Parser(tokens)
+  ast = parser.parse()
+  if ast.error: return None, ast.error
 
-    # Run program
-    interpreter = Interpreter()
-    context = Context('<program>')
-    context.symbol_table = global_symbol_table
-    result = interpreter.visit(ast.node, context)
+  # Run program
+  interpreter = Interpreter()
+  context = Context('<program>')
+  context.symbol_table = global_symbol_table
+  result = interpreter.visit(ast.node, context)
 
-    # Only return the value if it's not null
-    if result.value != Number.null:
-        return result.value, result.error
-    return None, result.error
-
+  return result.value, result.error

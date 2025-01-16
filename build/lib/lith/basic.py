@@ -4,22 +4,56 @@
 # Lith目前还不完善
 #######################################
 
-from .strings_with_arrows import *
-
 import string
 import os
 import math
+import requests
 
 import tkinter as tk
 from tkinter import messagebox
+#######################################
+# SWA
+#######################################
+
+def string_with_arrows(text, pos_start, pos_end):
+  result = ''
+
+	# Calculate indices
+  idx_start = max(text.rfind('\n', 0, pos_start.idx), 0)
+  idx_end = text.find('\n', idx_start + 1)
+  if idx_end < 0: idx_end = len(text)
+	
+	# Generate each line
+  line_count = pos_end.ln - pos_start.ln + 1
+  for i in range(line_count):
+		# Calculate line columns
+    line = text[idx_start:idx_end]
+    col_start = pos_start.col if i == 0 else 0
+    col_end = pos_end.col if i == line_count - 1 else len(line) - 1
+
+		# Append to result
+    result += line + '\n'
+    result += ' ' * col_start + '^' * (col_end - col_start)
+
+		# Re-calculate indices
+    idx_start = idx_end
+    idx_end = text.find('\n', idx_start + 1)
+    if idx_end < 0: idx_end = len(text)
+
+  return result.replace('\t', '')
+
+
 #######################################
 # CONSTANTS
 #######################################
 
 DIGITS = '0123456789'
 LETTERS = string.ascii_letters
-LETTERS_DIGITS = LETTERS + DIGITS
-VERSION = 'L0.1.1'
+CHINESE_LETTERS = ''.join(chr(i) for i in range(0x4E00, 0x9FFF + 1))
+RUSSIAN_LETTERS = ''.join(chr(i) for i in range(0x0400, 0x04FF + 1))
+CHINESE_TRADITIONAL = ''.join(chr(i) for i in range(0xF900, 0xFAFF + 1))
+LETTERS_DIGITS = LETTERS + DIGITS + CHINESE_LETTERS + RUSSIAN_LETTERS + CHINESE_TRADITIONAL
+VERSION = 'L0.1.4rc1'
 AUTHOR = 'UNREAL'
 LNAME = 'Lith'
 
@@ -28,7 +62,6 @@ LNAME = 'Lith'
 #######################################
 
 print(LNAME+' '+VERSION+' 准备就绪')
-print('')
 
 def create_window():
     print('Warning：此函数内测中，暂不稳定')
@@ -1735,6 +1768,33 @@ class BuiltInFunction(BaseFunction):
     if res.should_return(): return res
     return res.success(return_value)
   
+    def execute_help(self, exec_ctx):
+        commands = [
+            "msgbox(value) - 打印值",
+            "PRINT_RET(value) - 打印值并返回",
+            "INPUT() - 从用户获取输入",
+            "INPUT_INT() - 从用户获取整数输入",
+            "CLEAR() - 清除控制台",
+            "IS_NUM(value) - 检查值是否为数字",
+            "IS_STR(value) - 检查值是否为字符串",
+            "IS_LIST(value) - 检查值是否为列表",
+            "IS_FUN(value) - 检查值是否为函数",
+            "APPEND(list, value) - 将值添加到列表",
+            "POP(list, index) - 从列表中移除指定索引的元素",
+            "EXTEND(listA, listB) - 将listB的元素添加到listA",
+            "LEN(list) - 返回列表的长度",
+            "RUN(fn) - 运行指定的脚本文件"
+        ]
+        help_text = "\n".join(commands)
+        return RTResult().success(String(help_text))
+    execute_help.arg_names = []
+
+    def execute_info(self, exec_ctx):
+        version_info = f"{LNAME} {VERSION} - 作者: {AUTHOR}"
+        print(version_info)
+        return RTResult().success(String(version_info))
+    execute_info.arg_names = []
+
   def no_visit_method(self, node, context):
     raise Exception(f'No execute_{self.name} method defined')
 
@@ -2213,6 +2273,228 @@ class Interpreter:
 
   def visit_BreakNode(self, node, context):
     return RTResult().success_break()
+  
+#######################################
+# MATH
+#######################################
+
+def sin(x):
+    val = math.sin(x)
+    return val
+
+def cos(x):
+    val = math.cos(x)
+    return val
+
+def tan(x):
+    val = math.tan(x)
+    return val
+
+def cot(x):
+    # 检查正切值是否为0，以避免除以0的错误
+    if math.isclose(math.tan(x), 0, abs_tol=1e-9):
+        raise ValueError("余切值在tan(x)为0时是无穷大")
+    return 1 / math.tan(x)
+
+def sqrt(x):
+    """计算平方根，参数x为非负数"""
+    if x < 0:
+        raise ValueError("平方根的参数不能为负数")
+    return math.sqrt(x)
+
+def exp(x):
+    """计算指数函数e^x"""
+    return math.exp(x)
+
+def log(x, base=math.e):
+    """计算对数，参数x为正数，默认为自然对数"""
+    if x <= 0:
+        raise ValueError("对数的参数必须为正数")
+    return math.log(x, base)
+
+def factorial(n):
+    """计算阶乘，参数n为非负整数"""
+    if n < 0 or not isinstance(n, int):
+        raise ValueError("阶乘的参数必须为非负整数")
+    return math.factorial(n)
+
+def power(base, exponent):
+    """计算幂函数，base为底数，exponent为指数"""
+    return base ** exponent
+
+def abs_value(x):
+    """计算绝对值"""
+    return abs(x)
+
+def gcd(a, b):
+    """计算最大公约数"""
+    while b:
+        a, b = b, a % b
+    return a
+
+def lcm(a, b):
+    """计算最小公倍数"""
+    return abs(a*b) // gcd(a, b)
+
+def solve_linear(a, b):
+    """求解线性方程 ax + b = 0"""
+    if a == 0:
+        if b == 0:
+            return "无穷多解"
+        else:
+            return "无解"
+    return -b / a
+
+def solve_quadratic(a, b, c):
+    """求解二次方程 ax^2 + bx + c = 0"""
+    if a == 0:
+        return solve_linear(b, c)
+    discriminant = b**2 - 4*a*c
+    if discriminant < 0:
+        return "无实数解"
+    elif discriminant == 0:
+        return -b / (2*a)
+    else:
+        sqrt_discriminant = math.sqrt(discriminant)
+        return [(-b + sqrt_discriminant) / (2*a), (-b - sqrt_discriminant) / (2*a)]
+    
+def fibonacci(n):
+    """生成斐波那契数列的前n项"""
+    if n <= 0:
+        return []
+    elif n == 1:
+        return [0]
+    elif n == 2:
+        return [0, 1]
+    fib_sequence = [0, 1]
+    for i in range(2, n):
+        fib_sequence.append(fib_sequence[-1] + fib_sequence[-2])
+    return fib_sequence
+
+def is_prime(n):
+    """检测一个数是否为质数"""
+    if n <= 1:
+        return False
+    if n <= 3:
+        return True
+    if n % 2 == 0 or n % 3 == 0:
+        return False
+    i = 5
+    while i * i <= n:
+        if n % i == 0 or n % (i + 2) == 0:
+            return False
+        i += 6
+    return True
+
+def trapezoidal_rule(f, a, b, n):
+    """使用梯形法则计算定积分 ∫f(x)dx from a to b，n为分割的段数"""
+    h = (b - a) / n
+    integral = 0.5 * (f(a) + f(b))
+    for i in range(1, n):
+        integral += f(a + i * h)
+    integral *= h
+    return integral
+
+#######################################
+# CHEMICAL
+#######################################
+
+import re
+
+class ChemicalFormulaChecker:
+    def __init__(self):
+        self.formulas = []
+
+    def add_formula(self, formula):
+        if self.is_valid_chemical_formula(formula):
+            self.formulas.append(formula)
+        else:
+            print(f"化学式 '{formula}' 不正确，未添加。")
+
+    def is_valid_chemical_formula(self, formula):
+        # 正则表达式匹配化学式
+        pattern = r'^([A-Z][a-z]?\d*)+$'
+        return bool(re.match(pattern, formula))
+
+    def list_elements(self, element):
+        """获取包含指定元素的所有化学方程式"""
+        element = element.capitalize()  # 确保元素符号首字母大写
+        return [formula for formula in self.formulas if element in formula]
+
+    def listnum_elements(self, element):
+        """获取指定元素的化学方程式数量"""
+        return len(self.list_elements(element))
+
+    def chem(self, element):
+        """判断传入的字符串是否为有效的元素符号"""
+        # 定义有效元素符号的集合
+        valid_elements = {
+            "H", "He", "Li", "Be", "B", "C", "N", "O", "F", "Ne",
+            "Na", "Mg", "Al", "Si", "P", "S", "Cl", "Ar", "K", "Ca",
+            "Sc", "Ti", "V", "Cr", "Mn", "Fe", "Co", "Ni", "Cu", "Zn",
+            "Ga", "Ge", "As", "Se", "Br", "Kr", "Rb", "Sr", "Y", "Zr",
+            "Nb", "Mo", "Tc", "Ru", "Rh", "Pd", "Ag", "Cd", "In", "Sn",
+            "Sb", "Te", "I", "Xe", "Cs", "Ba", "La", "Ce", "Pr", "Nd",
+            "Pm", "Sm", "Eu", "Gd", "Tb", "Dy", "Ho", "Er", "Tm", "Yb",
+            "Lu", "Hf", "Ta", "W", "Re", "Os", "Ir", "Pt", "Au", "Hg",
+            "Tl", "Pb", "Bi", "Po", "At", "Rn", "Fr", "Ra", "Ac", "Th",
+            "Pa", "U", "Np", "Pu", "Am", "Cm", "Bk", "Cf", "Es", "Fm",
+            "Md", "No", "Lr", "Rf", "Db", "Sg", "Bh", "Hs", "Mt", "Ds",
+            "Rg", "Cn", "Nh", "Fl", "Mc", "Lv", "Ts", "Og"
+        }
+        return element in valid_elements
+
+    def element_exists(self, element):
+        """检查指定元素是否存在于任何化学方程式中"""
+        element = element.capitalize()  # 确保元素符号首字母大写
+        return any(element in formula for formula in self.formulas)
+
+# 创建化学式检查器实例
+checker = ChemicalFormulaChecker()
+
+# 添加化学式
+checker.add_formula("H2O")      # 水
+checker.add_formula("NaCl")     # 食盐
+checker.add_formula("C6H12O6")  # 葡萄糖
+checker.add_formula("H2O2")     # 过氧化氢
+checker.add_formula("O2")       # 氧气
+checker.add_formula("C12H22O11") # 蔗糖
+checker.add_formula("CH4")      # 甲烷
+checker.add_formula("C2H5OH")   # 乙醇
+checker.add_formula("NH3")      # 氨
+checker.add_formula("CaCO3")    # 碳酸钙
+checker.add_formula("HCl")      # 盐酸
+checker.add_formula("NaOH")     # 氢氧化钠
+checker.add_formula("Fe2O3")    # 氧化铁
+checker.add_formula("C6H6")     # 苯
+checker.add_formula("H2SO4")    # 硫酸
+checker.add_formula("AgNO3")    # 硝酸银
+checker.add_formula("KCl")      # 氯化钾
+checker.add_formula("C2H4")     # 乙烯
+checker.add_formula("C3H8")     # 丙烷
+checker.add_formula("C4H10")    # 丁烷
+checker.add_formula("C6H10O5")   # 纤维素
+checker.add_formula("H2O2O")    # 错误，不会添加
+checker.add_formula("H2O2O2")   # 错误，不会添加
+
+#######################################
+# EXPAND
+#######################################
+
+def r_file(filename):
+    with open(filename, 'r') as file:
+        return file.read()
+
+def w_file(filename, content):
+    with open(filename, 'w') as file:
+        file.write(content)
+
+def send_request(url, method='GET', data=None):
+    if method == 'GET':
+        response = requests.get(url)
+    elif method == 'POST':
+        response = requests.post(url, data=data)
+    return response
 
 #######################################
 # RUN
@@ -2238,6 +2520,10 @@ global_symbol_table.set("POP", BuiltInFunction.pop)
 global_symbol_table.set("EXTEND", BuiltInFunction.extend)
 global_symbol_table.set("LEN", BuiltInFunction.len)
 global_symbol_table.set("RUN", BuiltInFunction.run)
+global_symbol_table.set("HELP", BuiltInFunction("help"))
+global_symbol_table.set("INFO", BuiltInFunction("info"))
+
+print("欢迎使用Lith")
 
 def run(fn, text):
   # Generate tokens
